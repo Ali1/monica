@@ -6,6 +6,7 @@ use App\Helpers\DateHelper;
 use App\Helpers\NameHelper;
 use App\Helpers\SliceOfLifeHelper;
 use App\Helpers\SQLHelper;
+use App\Models\Contact;
 use App\Models\Journal;
 use App\Models\Post;
 use App\Models\SliceOfLife;
@@ -96,17 +97,15 @@ class JournalShowViewHelper
                             'post' => $post,
                         ]),
                     ],
-                    'contacts' => $post->contacts->map(function ($contact) use ($user) {
-                        // Format the contact name using the NameHelper
-                        $contact->name = NameHelper::formatContactName($user, $contact);
-
-                        // Generate the URL for the contact
-                        $contact->url = route('contact.show', [
-                            'vault' => $contact->vault_id,
-                            'contact' => $contact->id,
-                        ]);
-
-                        return $contact;
+                    'contacts' => $post->contacts->map(function (Contact $contact) use ($user): array {
+                        return [
+                            'id' => $contact->id,
+                            'name' => NameHelper::formatContactName($user, $contact),
+                            'url' => route('contact.show', [
+                                'vault' => $contact->vault_id,
+                                'contact' => $contact->id,
+                            ]),
+                        ];
                     }),
                 ]);
 

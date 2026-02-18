@@ -5,7 +5,7 @@ import { debounce } from 'lodash';
 import { trans } from 'laravel-vue-i18n';
 import { DatePicker } from 'v-calendar';
 import 'v-calendar/style.css';
-import Layout from '@/Shared/Layout.vue';
+import Layout from '@/Layouts/Layout.vue';
 import PrettyLink from '@/Shared/Form/PrettyLink.vue';
 import TextInput from '@/Shared/Form/TextInput.vue';
 import TextArea from '@/Shared/Form/TextArea.vue';
@@ -17,13 +17,19 @@ import ContactSelector from '@/Shared/Form/ContactSelector.vue';
 import JetConfirmationModal from '@/Components/Jetstream/ConfirmationModal.vue';
 import JetDangerButton from '@/Components/Jetstream/DangerButton.vue';
 import JetSecondaryButton from '@/Components/Jetstream/SecondaryButton.vue';
+import {
+  buildContactMentionIndex,
+  deserializeTokenizedMentions,
+  mentionLabelForContact,
+  serializeEditorMentions,
+} from '@/utils/mentionUtils.js';
 
 const props = defineProps({
   layoutData: Object,
   data: Object,
 });
 
-const namePattern = "[-A-Za-z.'’]+(?:\\s+[-A-Za-z.'’]+)*[-A-Za-z.'’]*";
+const initialContactMentionIndex = buildContactMentionIndex(props.data.contacts ?? []);
 
 const form = useForm({
   title: props.data.title,
@@ -32,20 +38,7 @@ const form = useForm({
   sections: props.data.sections.map((section) => ({
     id: section.id,
     label: section.label,
-    content: (section.content || '').replace(
-      // not defined when dealing with a new post
-      /\{\{\{CONTACT-ID:([a-f0-9-]+)\|(.*?)\}\}\}/g,
-      (match, contactId, fallbackName) => {
-        let contact = props.data.contacts.find((c) => c.id === contactId);
-
-        if (contact) {
-          return `@"${contact.name.trim()}"`;
-        }
-
-        // If contact is missing, use fallback name
-        return `@${fallbackName} (contact no longer linked to post)`;
-      },
-    ),
+    content: deserializeTokenizedMentions(section.content || '', initialContactMentionIndex),
   })),
   uuid: null,
   name: null,
@@ -58,22 +51,23 @@ const form = useForm({
 const hasInvalidMentions = ref(false); // Track if there are invalid mentions
 const mentionErrorMessage = ref(''); // Error message for invalid mentions
 
+const contactMentionIndex = computed(() => buildContactMentionIndex(form.contacts ?? []));
+
 const tributeOptions = computed(() => ({
   trigger: '@',
-  values: form.contacts.map((contact) => ({
-    key: contact.name,
-    value: contact.name,
-    id: contact.id,
-    original: contact,
-  })),
+  values: form.contacts.map((contact) => {
+    const mentionLabel = mentionLabelForContact(contact, contactMentionIndex.value);
+
+    return {
+      key: mentionLabel,
+      value: mentionLabel,
+      mentionLabel,
+      id: contact.id,
+      original: contact,
+    };
+  }),
   selectTemplate: function (item) {
-    const name = item.original.key.trim();
-    const nameRegex = new RegExp(`^${namePattern}$`);
-    if (nameRegex.test(name)) {
-      return `@"${name}"`;
-    } else {
-      return ''; // Prevent insertion of unsupported names (i.e. usual characters that don't fit the expected pattern)
-    }
+    return `@"${item.original.mentionLabel}"`;
   },
 }));
 const saveInProgress = ref(false);
@@ -175,35 +169,20 @@ const update = () => {
 
   processedForm.sections.forEach((section) => {
     if (section.content) {
-      const mentionPattern = new RegExp(`@"(${namePattern})"`, 'g');
+      const mentionResult = serializeEditorMentions(section.content, contactMentionIndex.value);
 
-      section.content = section.content.replace(mentionPattern, (match, name) => {
-        name = name.trim(); // Trim spaces from the mention name
-        console.log('Matched Name:', name);
+      section.content = mentionResult.content;
 
-        let contact = processedForm.contacts.find((c) => c.name.trim() === name); // Trim contact names before matching
-
-        if (contact) {
-          // Check if there are duplicate contacts with the same name and different IDs
-          const duplicateContacts = processedForm.contacts.filter((c) => c.name.trim() === name && c.id !== contact.id);
-
-          if (duplicateContacts.length > 0) {
-            // If there are duplicate contacts with the same name and different IDs, mark as invalid
-            invalidMentionsFound = true;
-            invalidMentionText =
-              trans('Cannot mention a contact when there are 2 identically named contacts linked') + `: @${name}`;
-            return '';
-          }
-
-          return `{{{CONTACT-ID:${contact.id}|${name}}}}`;
-        }
-
-        // If no contact is found, mark as invalid
+      if (mentionResult.invalidMentions.length > 0) {
         invalidMentionsFound = true;
-        invalidMentionText = trans('Invalid mention') + `: @${name}`;
 
-        return '';
-      });
+        const invalidMention = mentionResult.invalidMentions[0];
+        if (invalidMention.reason === 'ambiguous') {
+          invalidMentionText = `${trans('Mention is ambiguous. Pick a suggestion with short ID')}: @"${invalidMention.label}"`;
+        } else {
+          invalidMentionText = `${trans('Invalid mention')}: @"${invalidMention.label}"`;
+        }
+      }
     }
   });
 
@@ -418,6 +397,9 @@ const destroy = () => {
                       'block w-full': true,
                       'border-red-500': hasInvalidMentions, // Add the red border if invalid mentions
                     }" />
+                  <p class="mt-2 text-xs text-gray-500">
+                    {{ $t('Use @"Name". If names are duplicated, pick @"Name (id)" from suggestions.') }}
+                  </p>
                 </div>
                 <!-- Show error message if invalid mentions exist -->
                 <div v-if="hasInvalidMentions" class="text-red-500 text-sm mt-2">
@@ -482,7 +464,7 @@ const destroy = () => {
               class="mb-6 inline-block">
               <template #default="{ inputValue, inputEvents }">
                 <input
-                  class="rounded-sm border bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+                  class="rounded-xs border bg-white px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
                   :value="inputValue"
                   v-on="inputEvents" />
               </template>

@@ -36,11 +36,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: v${{ needs.semantic.outputs.new_release_version }}
       - name: Download changelog file
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: changelog
 

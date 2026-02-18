@@ -4,6 +4,7 @@ namespace App\Domains\Vault\Search\Web\ViewHelpers;
 
 use App\Helpers\NameHelper;
 use App\Models\Contact;
+use App\Models\User;
 use App\Models\Vault;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -15,11 +16,16 @@ class VaultContactSearchViewHelper
         /** @var Collection<int, Contact> */
         $contacts = Contact::search($term)
             ->where('vault_id', $vault->id)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
             ->take(5)
             ->get();
 
         // Get the current user
         $user = Auth::user();
+        if (! $user instanceof User) {
+            return collect();
+        }
 
         return $contacts->map(function (Contact $contact) use ($user): array {
             return [

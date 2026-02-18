@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, useTemplateRef } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n';
 import { flash } from '@/methods.js';
@@ -20,7 +20,7 @@ const form = useForm({
 });
 
 const createLifeMetricModalShown = ref(false);
-const labelField = ref(null);
+const labelField = useTemplateRef('labelField');
 const loadingState = ref('');
 const localLifeMetrics = ref(props.data.data);
 const editedLifeMetricId = ref(0);
@@ -128,7 +128,7 @@ const destroy = (lifeMetric) => {
     <!-- modal to create a quick fact -->
     <form
       v-if="createLifeMetricModalShown"
-      class="mb-2 mt-2 rounded-lg border border-gray-200 bg-gray-50 bg-white dark:border-gray-700 dark:bg-gray-900"
+      class="mb-2 mt-2 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
       @submit.prevent="store()">
       <div class="border-b border-gray-200 p-5 dark:border-gray-700">
         <errors :errors="form.errors" />
@@ -230,7 +230,7 @@ const destroy = (lifeMetric) => {
           <!-- edit modal -->
           <form
             v-if="editedLifeMetricId === lifeMetric.id"
-            class="bg-gray-50 bg-white dark:border-gray-700 dark:bg-gray-900"
+            class="bg-white dark:border-gray-700 dark:bg-gray-900"
             @submit.prevent="update(lifeMetric)">
             <div class="border-b border-gray-200 p-5 dark:border-gray-700">
               <errors :errors="form.errors" />

@@ -2,14 +2,23 @@
 
 namespace App\Models;
 
+use App\Domains\Contact\Dav\VCalendarResource;
+use App\Traits\HasUuids;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
-class ContactImportantDate extends Model
+class ContactImportantDate extends VCalendarResource
 {
     use HasFactory;
+    use HasUuids;
+    use SoftDeletes;
 
     protected $table = 'contact_important_dates';
 
@@ -41,6 +50,21 @@ class ContactImportantDate extends Model
         'month',
         'year',
         'contact_important_date_type_id',
+        'vcalendar',
+        'distant_uuid',
+        'distant_etag',
+        'distant_uri',
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'day' => 'integer',
+        'month' => 'integer',
+        'year' => 'integer',
     ];
 
     /**
@@ -71,5 +95,50 @@ class ContactImportantDate extends Model
     public function feedItem(): MorphOne
     {
         return $this->morphOne(ContactFeedItem::class, 'feedable');
+    }
+
+    /**
+     * Get the date as a Carbon instance.
+     *
+     * @return Attribute<Carbon,null>
+     */
+    public function date(): Attribute
+    {
+        return Attribute::get(function () {
+            return Carbon::create($this->year, $this->month, $this->day);
+        });
+    }
+
+    /**
+     * Get the date as a VCard formatted string.
+     *
+     * @see https://datatracker.ietf.org/doc/html/rfc6350#section-6.2.5
+     */
+    public function getVCardDate(): string
+    {
+        $date = $this->year ? Str::padLeft((string) $this->year, 2, '0') : '--';
+        if ($this->month === null && $this->day === null) {
+            return $date;
+        }
+
+        $date .= $this->month ? Str::padLeft((string) $this->month, 2, '0') : '-';
+        $date .= $this->day ? Str::padLeft((string) $this->day, 2, '0') : '';
+
+        return $date;
+    }
+
+    /**
+     * Scope a query to only include active subscriptions.
+     */
+    #[Scope]
+    public function birthday(Builder $query): Builder
+    {
+        return $query
+            ->where('contact_important_date_type_id', function (Builder $query) {
+                $query->select('id')
+                    ->from('contact_important_date_types')
+                    ->whereColumn('internal_type', ContactImportantDate::TYPE_BIRTHDATE)
+                    ->limit(1);
+            });
     }
 }

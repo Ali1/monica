@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from 'vue';
+import { nextTick, ref, useTemplateRef } from 'vue';
 import { flash } from '@/methods';
 import { trans } from 'laravel-vue-i18n';
 import HoverMenu from '@/Shared/HoverMenu.vue';
@@ -12,9 +12,9 @@ const props = defineProps({
   data: Object,
 });
 
-const createTaskForm = ref(null);
-const updateTaskForm = ref([]);
-const updateCompletedTaskForm = ref([]);
+const createTaskForm = useTemplateRef('createTaskForm');
+const updateTaskForm = useTemplateRef('updateTaskForm');
+const updateCompletedTaskForm = useTemplateRef('updateCompletedTaskForm');
 const createTaskModalShown = ref(false);
 const showCompletedTasks = ref(false);
 const localTasks = ref(props.data.tasks);
@@ -54,13 +54,13 @@ const created = (task) => {
 };
 
 const updated = (task) => {
-  flash(trans('The task has been edited'), 'success');
+  flash(trans('The task has been updated'), 'success');
   localTasks.value[localTasks.value.findIndex((x) => x.id === task.id)] = task;
   editedTaskId.value = 0;
 };
 
 const updatedCompleted = (task) => {
-  flash(trans('The task has been edited'), 'success');
+  flash(trans('The task has been updated'), 'success');
   localCompletedTasks.value[localCompletedTasks.value.findIndex((x) => x.id === task.id)] = task;
   editedCompletedTaskId.value = 0;
 };
@@ -123,7 +123,7 @@ const destroy = (task) => {
               v-model="task.completed"
               :name="task.id"
               type="checkbox"
-              class="focus:ring-3 relative h-4 w-4 rounded-sm border border-gray-300 bg-gray-50 focus:ring-blue-300 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+              class="focus:ring-3 relative h-4 w-4 rounded-xs border border-gray-300 bg-gray-50 focus:ring-blue-300 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
               @change="toggle(task)" />
             <label :for="task.id" class="ms-2 flex cursor-pointer text-gray-900 dark:text-gray-50">
               {{ task.label }}
@@ -180,7 +180,7 @@ const destroy = (task) => {
                 v-model="task.completed"
                 :name="task.id"
                 type="checkbox"
-                class="focus:ring-3 relative h-4 w-4 rounded-sm border border-gray-300 bg-gray-50 focus:ring-blue-300 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
+                class="focus:ring-3 relative h-4 w-4 rounded-xs border border-gray-300 bg-gray-50 focus:ring-blue-300 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600"
                 @change="toggle(task)" />
 
               <label :for="task.id" class="ms-2 flex cursor-pointer items-center text-gray-900 dark:text-gray-50">

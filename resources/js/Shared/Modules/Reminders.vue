@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from 'vue';
+import { nextTick, ref, useTemplateRef } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { flash } from '@/methods';
 import { trans } from 'laravel-vue-i18n';
@@ -17,8 +17,8 @@ const props = defineProps({
   data: Object,
 });
 
-const label = ref(null);
-const labels = ref([]);
+const label = useTemplateRef('label');
+const labels = useTemplateRef('labels');
 const loadingState = ref('');
 const addReminderModalShown = ref(false);
 const localReminders = ref(props.data.reminders);
@@ -92,7 +92,7 @@ const update = (reminder) => {
     .put(reminder.url.update, form)
     .then((response) => {
       loadingState.value = '';
-      flash(trans('The reminder has been edited'), 'success');
+      flash(trans('The reminder has been updated'), 'success');
       localReminders.value[localReminders.value.findIndex((x) => x.id === reminder.id)] = response.data.data;
       editedReminderId.value = 0;
     })
@@ -184,7 +184,7 @@ const destroy = (reminder) => {
               :is-dark="isDark()">
               <template #default="{ inputValue, inputEvents }">
                 <input
-                  class="rounded-sm border bg-white px-2 py-1 dark:bg-gray-900"
+                  class="rounded-xs border bg-white px-2 py-1 dark:bg-gray-900"
                   :value="inputValue"
                   v-on="inputEvents" />
               </template>
@@ -380,7 +380,7 @@ const destroy = (reminder) => {
                     :is-dark="isDark()">
                     <template #default="{ inputValue, inputEvents }">
                       <input
-                        class="rounded-sm border bg-white px-2 py-1 dark:bg-gray-900"
+                        class="rounded-xs border bg-white px-2 py-1 dark:bg-gray-900"
                         :value="inputValue"
                         v-on="inputEvents" />
                     </template>

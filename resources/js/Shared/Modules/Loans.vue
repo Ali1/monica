@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from 'vue';
+import { nextTick, ref, useTemplateRef } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { flash } from '@/methods';
 import { trans } from 'laravel-vue-i18n';
@@ -21,7 +21,7 @@ const props = defineProps({
   data: Object,
 });
 
-const nameInput = ref(null);
+const nameInput = useTemplateRef('nameInput');
 const loadingState = ref('');
 const createLoanModalShown = ref(false);
 const localLoans = ref(props.data.loans);
@@ -107,7 +107,7 @@ const update = (loan) => {
     .put(loan.url.update, form)
     .then((response) => {
       loadingState.value = '';
-      flash(trans('The loan has been edited'), 'success');
+      flash(trans('The loan has been updated'), 'success');
       localLoans.value[localLoans.value.findIndex((x) => x.id === loan.id)] = response.data.data;
       editedLoanId.value = 0;
     })
@@ -261,7 +261,7 @@ const toggle = (loan) => {
               :is-dark="isDark()">
               <template #default="{ inputValue, inputEvents }">
                 <input
-                  class="rounded-sm border bg-white px-2 py-1 dark:bg-gray-900"
+                  class="rounded-xs border bg-white px-2 py-1 dark:bg-gray-900"
                   :value="inputValue"
                   v-on="inputEvents" />
               </template>
@@ -477,7 +477,7 @@ const toggle = (loan) => {
                 :is-dark="isDark()">
                 <template #default="{ inputValue, inputEvents }">
                   <input
-                    class="rounded-sm border bg-white px-2 py-1 dark:bg-gray-900"
+                    class="rounded-xs border bg-white px-2 py-1 dark:bg-gray-900"
                     :value="inputValue"
                     v-on="inputEvents" />
                 </template>

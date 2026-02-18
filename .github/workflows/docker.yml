@@ -31,7 +31,7 @@ jobs:
           - name: apache
             file: scripts/docker/Dockerfile
             tag: main
-            suffix:
+            suffix: ''
           - name: fpm
             file: scripts/docker/Dockerfile-fpm
             tag: main-fpm
@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

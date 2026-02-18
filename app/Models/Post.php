@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
+use function Safe\preg_match_all;
+
 class Post extends Model
 {
     use HasFactory;
@@ -155,7 +157,7 @@ class Post extends Model
                 $content = optional($this->postSections()->whereNotNull('content')->first())->content;
 
                 if (! $content) {
-                    return '';
+                    return null;
                 }
 
                 $maxLength = 200; // Target character limit
@@ -168,6 +170,7 @@ class Post extends Model
                 $tokenPositions = $matches[0]; // List of tokens and their positions
 
                 // Iterate through the content while respecting the maxLength
+                $truncated = false;
                 $index = 0;
                 while ($actualLength < $maxLength && $index < strlen($content)) {
                     $isToken = false;
@@ -181,6 +184,7 @@ class Post extends Model
                         if ($index === $tokenStart) {
                             // If adding this token exceeds max length, stop
                             if ($actualLength + 20 > $maxLength) {
+                                $truncated = true;
                                 break 2;
                             }
 
@@ -204,6 +208,10 @@ class Post extends Model
                     if (! $isToken) {
                         $safeCutoff = $index;
                     }
+                }
+
+                if (! $truncated && $index >= strlen($content)) {
+                    return $content;
                 }
 
                 // Ensure we cut off safely before a token

@@ -193,7 +193,7 @@ defineExpose({
   background-color: #2d2f33 !important;
 }
 </style>
-<style v-if="tributeOptions">
+<style>
 /* Tribute Container */
 .tribute-container {
   position: absolute;
